@@ -27,7 +27,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable()) // Deaktiver CSRF for enkelhed
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll() // Tillad offentlig adgang til auth-endpoints
-                        .anyRequest().authenticated() // Kræv autentifikation for andre endpoints
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) // JWT, ingen sessioner

@@ -1,6 +1,9 @@
 package com.edu.eksamenbackend.dto;
 
+import lombok.Setter;
+
 import java.util.List;
+
 
 public class CustomerDTO {
     private Long id;

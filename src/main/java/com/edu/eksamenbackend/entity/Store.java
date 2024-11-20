@@ -1,9 +1,14 @@
 package com.edu.eksamenbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
 public class Store {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,5 +22,13 @@ public class Store {
     @OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
     private List<Album> albums;
 
-    // Getters, Setters, Constructors
+    public Store() {
+    }
+
+    public Store(String name, String street, String city, String zip) {
+        this.name = name;
+        this.street = street;
+        this.city = city;
+        this.zip = zip;
+    }
 }
