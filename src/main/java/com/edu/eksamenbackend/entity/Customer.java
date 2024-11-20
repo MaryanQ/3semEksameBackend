@@ -1,9 +1,15 @@
 package com.edu.eksamenbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,9 +19,13 @@ public class Customer {
     private String email;
     private String phoneNumber;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private List<AlbumCustomer> albumCustomers;
+    public Customer() {
+    }
 
-    // Getters, Setters, Constructors
+    public Customer(String name, String email, String phoneNumber) {
+        this.name = name;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+    }
 }
 
