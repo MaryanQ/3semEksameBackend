@@ -1,52 +1,45 @@
 package com.edu.eksamenbackend.config;
 
+import com.edu.eksamenbackend.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails guest = User
-                .withUsername("guest")
-                .password(passwordEncoder().encode("guestpassword"))
-                .roles("GUEST")
-                .build();
+    private final UserService userService;
 
-        UserDetails admin = User
-                .withUsername("admin")
-                .password(passwordEncoder().encode("adminpassword"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(guest, admin);
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public SecurityConfig(UserService userService) {
+        this.userService = userService;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf().disable() // Deaktiver CSRF for simplicity (ikke anbefalet til produktion)
-                .authorizeHttpRequests()
-                .requestMatchers("/admin/**").hasRole("ADMIN") // Kun admin kan tilgå /admin
-                .requestMatchers("/guest/**").hasRole("GUEST") // Kun gæster kan tilgå /guest
-                .anyRequest().authenticated() // Alle andre endpoints kræver login
-                .and()
-                .formLogin() // Standard login-side
-                .and()
-                .httpBasic(); // Tillad basic authentication (fx med Postman)
-
+        http.csrf(csrf -> csrf.disable()) // Deaktiver CSRF for enkelhed
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**").permitAll() // Tillad offentlig adgang til auth-endpoints
+                        .anyRequest().authenticated() // Kræv autentifikation for andre endpoints
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) // JWT, ingen sessioner
+                )
+                .httpBasic(httpBasic -> httpBasic.disable()); // Deaktiver Basic Auth
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        AuthenticationManagerBuilder authManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authManagerBuilder.userDetailsService(userService).passwordEncoder(new BCryptPasswordEncoder());
+        return authManagerBuilder.build();
     }
 }
