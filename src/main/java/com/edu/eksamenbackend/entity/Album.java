@@ -1,6 +1,7 @@
 package com.edu.eksamenbackend.entity;
 
 import com.edu.eksamenbackend.enums.Genre;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,9 +25,10 @@ public class Album {
 
     private boolean available;
 
-    @ManyToOne(fetch = FetchType.LAZY)  // Default is LAZY. Change to EAGER if you want to automatically fetch the store
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id")
     private Store store;
+    @JsonIgnore
     public Album() {
     }
 

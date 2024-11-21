@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class AlbumCustomerMapper {
 
-    // Convert from Entity to DTO
     public AlbumCustomerDTO toDTO(AlbumCustomer albumCustomer) {
         AlbumCustomerDTO dto = new AlbumCustomerDTO();
         dto.setId(albumCustomer.getId());
+        dto.setCustomerId(albumCustomer.getCustomer().getId()); // Map the customerId
         dto.setAlbumId(albumCustomer.getAlbum().getId());
         dto.setAlbumTitle(albumCustomer.getAlbum().getTitle());
         dto.setAlbumArtist(albumCustomer.getAlbum().getArtist());
@@ -23,15 +23,14 @@ public class AlbumCustomerMapper {
         return dto;
     }
 
-    // Convert from DTO to Entity
     public AlbumCustomer toEntity(AlbumCustomerDTO dto, Customer customer, Album album) {
-        AlbumCustomer albumCustomer = new AlbumCustomer();
-        albumCustomer.setId(dto.getId());
-        albumCustomer.setAlbum(album);
-        albumCustomer.setCustomer(customer);
-        albumCustomer.setInterestDate(dto.getInterestDate());
-        albumCustomer.setReserved(dto.isReserved());
-        albumCustomer.setLiked(dto.isLiked());
-        return albumCustomer;
+        AlbumCustomer entity = new AlbumCustomer();
+        entity.setId(dto.getId());
+        entity.setCustomer(customer); // Use the provided customer
+        entity.setAlbum(album); // Use the provided album
+        entity.setInterestDate(dto.getInterestDate());
+        entity.setReserved(dto.isReserved());
+        entity.setLiked(dto.isLiked());
+        return entity;
     }
 }

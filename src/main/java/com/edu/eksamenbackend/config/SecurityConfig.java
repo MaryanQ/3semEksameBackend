@@ -24,15 +24,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()) // Deaktiver CSRF for enkelhed
+        http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll() // Tillad offentlig adgang til auth-endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS) // JWT, ingen sessioner
-                )
-                .httpBasic(httpBasic -> httpBasic.disable()); // Deaktiver Basic Auth
+                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS)
+                );
         return http.build();
     }
 

@@ -1,4 +1,5 @@
 package com.edu.eksamenbackend.dto;
+import com.edu.eksamenbackend.enums.Genre;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,7 @@ public class AlbumDTO {
     private Long id;
     private String title;
     private String artist;
-    private String genre; // Enum som String
+    private Genre genre;
     private boolean available;
-    private Long storeId; // Reference til Store, hvis nødvendigt
+    private String storeName;
 }

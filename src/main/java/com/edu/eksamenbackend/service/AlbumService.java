@@ -13,17 +13,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 public class AlbumService {
 
     private final AlbumRepository albumRepository;
     private final AlbumMapper albumMapper;
-    private final StoreRepository storeRepository; // Add the store repository to fetch store details
+    private final StoreRepository storeRepository;
 
     @Autowired
     public AlbumService(AlbumRepository albumRepository, AlbumMapper albumMapper, StoreRepository storeRepository) {
@@ -34,27 +29,27 @@ public class AlbumService {
 
     // A. Create a new album
     public AlbumDTO createAlbum(AlbumDTO albumDTO) {
-        // Ensure that the storeId is provided in the DTO
-        if (albumDTO.getStoreId() == null) {
-            throw new RuntimeException("Store ID cannot be null");
+        // Find butikker med navnet
+        List<Store> stores = storeRepository.findByName(albumDTO.getStoreName());
+
+        if (stores.isEmpty()) {
+            throw new RuntimeException("Store not found: " + albumDTO.getStoreName());
         }
 
-        // Fetch the store by ID using the storeRepository
-        Store store = storeRepository.findById(albumDTO.getStoreId())
-                .orElseThrow(() -> new RuntimeException("Store not found"));
+        // Automatisk vælg den første butik, hvis der findes flere
+        Store store = stores.get(0);
 
-        // Convert the AlbumDTO to Album entity
-        Album album = albumMapper.toEntity(albumDTO);
+        // Opret albummet
+        Album album = new Album(albumDTO.getTitle(), albumDTO.getArtist(), albumDTO.getGenre(), albumDTO.isAvailable(), store);
 
-        // Assign the store to the album
-        album.setStore(store);
-
-        // Save the album and convert it back to DTO
+        // Gem albummet i databasen
         album = albumRepository.save(album);
 
-        // Return the created album DTO
+        // Returnér som DTO
         return albumMapper.toDTO(album);
     }
+
+
 
     // B. Get all albums
     public List<AlbumDTO> getAllAlbums() {
@@ -63,7 +58,7 @@ public class AlbumService {
                 .map(album -> {
                     AlbumDTO dto = albumMapper.toDTO(album);
                     if (album.getStore() != null) {
-                        dto.setStoreId(album.getStore().getId());  // Explicitly set storeId in the DTO
+                        dto.setStoreName(album.getStore().getName()); // Set storeName in the DTO
                     }
                     return dto;
                 })
@@ -77,32 +72,39 @@ public class AlbumService {
 
         AlbumDTO albumDTO = albumMapper.toDTO(album);
         if (album.getStore() != null) {
-            albumDTO.setStoreId(album.getStore().getId());  // Explicitly set storeId in the DTO
+            albumDTO.setStoreName(album.getStore().getName()); // Set storeName in the DTO
         }
         return albumDTO;
     }
 
     // D. Update an existing album
     public AlbumDTO updateAlbum(Long id, AlbumDTO albumDTO) {
-        // Fetch the album by ID
+        // Find albummet
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Album not found"));
+                .orElseThrow(() -> new RuntimeException("Album not found with ID: " + id));
 
-        // Update album properties from the DTO
+        // Opdater album-egenskaber
         album.setTitle(albumDTO.getTitle());
         album.setArtist(albumDTO.getArtist());
-        album.setGenre(Genre.valueOf(albumDTO.getGenre()));  // Set genre from DTO
+        album.setGenre(albumDTO.getGenre());
         album.setAvailable(albumDTO.isAvailable());
 
-        // Check if store ID is provided for update
-        if (albumDTO.getStoreId() != null) {
-            Store store = storeRepository.findById(albumDTO.getStoreId())
-                    .orElseThrow(() -> new RuntimeException("Store not found"));
-            album.setStore(store);  // Update the store association
+        // Brug storeName til at finde en butik
+        if (albumDTO.getStoreName() != null) {
+            List<Store> stores = storeRepository.findByName(albumDTO.getStoreName());
+
+            if (stores.isEmpty()) {
+                throw new RuntimeException("Store not found with name: " + albumDTO.getStoreName());
+            }
+
+            // Vælg den første butik fra listen
+            Store store = stores.get(0);
+            album.setStore(store);
         }
 
-        // Save the updated album and convert it back to DTO
+        // Gem albummet
         album = albumRepository.save(album);
+
         return albumMapper.toDTO(album);
     }
 

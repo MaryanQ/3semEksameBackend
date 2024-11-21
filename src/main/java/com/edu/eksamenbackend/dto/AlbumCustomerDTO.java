@@ -11,6 +11,7 @@ public class AlbumCustomerDTO {
 
     private Long id;
     private Long albumId;
+    private Long customerId;
     private String albumTitle;
     private String albumArtist;
     private LocalDate interestDate;

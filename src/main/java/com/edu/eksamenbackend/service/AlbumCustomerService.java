@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,58 +44,72 @@ public class AlbumCustomerService {
     }
 
     // A. Register interest (reserve/like) for an album
-    public void registerInterest(Long customerId, Long albumId) {
-        // Find the customer and album
-        Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new RuntimeException("Album not found"));
-
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-
-        // Check if the customer is already registered for the album
-        AlbumCustomer albumCustomer = albumCustomerRepository.findByCustomerIdAndAlbumId(customerId, albumId);
-        if (albumCustomer == null) {
-            albumCustomer = new AlbumCustomer();
-            albumCustomer.setAlbum(album);
-            albumCustomer.setCustomer(customer);
-            albumCustomer.setInterestDate(java.time.LocalDate.now());
-            albumCustomer.setReserved(true); // Mark the album as reserved
-        } else {
-            albumCustomer.setReserved(true); // Update the reservation status
+    @Transactional
+    public String registerInterest(Long customerId, Long albumId) {
+        Optional<Customer> customerOpt = customerRepository.findById(customerId);
+        if (customerOpt.isEmpty()) {
+            return "Customer not found with ID: " + customerId;
         }
 
-        albumCustomerRepository.save(albumCustomer);
+        Optional<Album> albumOpt = albumRepository.findById(albumId);
+        if (albumOpt.isEmpty()) {
+            return "Album not found with ID: " + albumId;
+        }
+
+        // Check if interest already exists
+        if (albumCustomerRepository.findByCustomerIdAndAlbumId(customerId, albumId) != null) {
+            return "Customer has already registered interest in this album.";
+        }
+
+        // Register interest
+        AlbumCustomer interest = new AlbumCustomer();
+        interest.setCustomer(customerOpt.get());
+        interest.setAlbum(albumOpt.get());
+        interest.setInterestDate(LocalDate.now());
+        interest.setReserved(true);
+
+        albumCustomerRepository.save(interest);
+        return "Interest registered successfully!";
     }
 
-    // B. Unsubscribe (unreserve/unlike) from an album
-    public void unsubscribeFromAlbum(Long customerId, Long albumId) {
-        Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new RuntimeException("Album not found"));
 
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+    @Transactional
+    public String unsubscribeInterest(Long customerId, Long albumId) {
+        AlbumCustomer interest = albumCustomerRepository.findByCustomerIdAndAlbumId(customerId, albumId);
+        if (interest == null) {
+            return "No existing interest found for this album and customer.";
+        }
 
-        AlbumCustomer albumCustomer = albumCustomerRepository.findByCustomerIdAndAlbumId(customerId, albumId);
-        if (albumCustomer != null) {
-            albumCustomer.setReserved(false); // Unmark as reserved
-            albumCustomer.setLiked(false); // Unmark as liked
-            albumCustomerRepository.save(albumCustomer);
+        albumCustomerRepository.delete(interest);
+        return "Unsubscribed from album successfully!";
+    }
+
+
+    public List<AlbumCustomer> getReservations(Long customerId, boolean availableOnly) {
+        Optional<Customer> customerOpt = customerRepository.findById(customerId);
+        if (customerOpt.isEmpty()) {
+            return Collections.emptyList(); // Return an empty list
+        }
+
+        if (availableOnly) {
+            return albumCustomerRepository.findByCustomerIdAndAlbumAvailable(customerId, true);
         } else {
-            throw new RuntimeException("Customer has not shown interest in this album");
+            return albumCustomerRepository.findByCustomerId(customerId);
         }
     }
 
-    // C. Get reservations (all or available albums only)
-    public List<AlbumCustomerDTO> getReservations(Long customerId, boolean available) {
-        List<AlbumCustomer> reservations;
-        if (available) {
-            reservations = albumCustomerRepository.findByCustomerIdAndReservedTrueAndAlbumAvailableTrue(customerId);
-        } else {
-            reservations = albumCustomerRepository.findByCustomerIdAndReservedTrue(customerId);
+    public List<Album> getAvailableReservedAlbums(Long customerId) {
+        // Check if the customer exists
+        Optional<Customer> customerOpt = customerRepository.findById(customerId);
+        if (customerOpt.isEmpty()) {
+            return Collections.emptyList(); // Return empty list if customer doesn't exist
         }
 
-        return reservations.stream()
-                .map(albumCustomerMapper::toDTO) // Convert entities to DTOs
-                .collect(Collectors.toList());
+        // Fetch reserved albums for the customer and filter those that are available
+        return albumCustomerRepository.findByCustomerIdAndReserved(customerId, true).stream()
+                .map(AlbumCustomer::getAlbum)
+                .filter(Album::isAvailable)
+                .toList();
     }
+
 }

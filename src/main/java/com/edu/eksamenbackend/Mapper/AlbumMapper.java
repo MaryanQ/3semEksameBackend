@@ -17,7 +17,7 @@ public class AlbumMapper {
         dto.setId(album.getId());
         dto.setTitle(album.getTitle());
         dto.setArtist(album.getArtist());
-        dto.setGenre(album.getGenre().name());  // Convert Enum to String
+        dto.setGenre(album.getGenre());  // Directly set Genre
         dto.setAvailable(album.isAvailable());
         return dto;
     }
@@ -27,7 +27,7 @@ public class AlbumMapper {
         album.setId(dto.getId());
         album.setTitle(dto.getTitle());
         album.setArtist(dto.getArtist());
-        album.setGenre(Genre.valueOf(dto.getGenre()));  // Convert String to Enum
+        album.setGenre(dto.getGenre());  // Directly set Genre
         album.setAvailable(dto.isAvailable());
         return album;
     }

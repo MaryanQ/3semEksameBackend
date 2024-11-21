@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
+
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -89,7 +91,8 @@ public class InitData {
         Customer customer4 = new Customer("Bob White", "bob.white@example.com", "56473829");
         Customer customer5 = new Customer("Charlie Green", "charlie.green@example.com", "12039847");
 
-        customerRepository.saveAll(List.of(customer1, customer2, customer3, customer4, customer5));
+        customerRepository.saveAll(Arrays.asList(customer1, customer2, customer3, customer4, customer5));
+
 
         // Registrer kunders interesse for albums
         AlbumCustomer albumCustomer1 = new AlbumCustomer(album1, customer1, java.time.LocalDate.now(), false, false);
