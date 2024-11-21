@@ -3,7 +3,7 @@ Music Store is a modern web application built as part of a 24-hour exam project 
 
 The backend is powered by Spring Boot, JPA/Hibernate, and a MySQL database, while the frontend is a standalone application developed using React and TypeScript, communicating with the backend through REST APIs.
 
-!!!!Admin credentials!!!!:
+!!!!Admin credentials!!!!
 
 Username: "admin"
 Password: "secureAdminPassword"
