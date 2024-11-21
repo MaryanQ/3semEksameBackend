@@ -1,12 +1,16 @@
 package com.edu.eksamenbackend.controller;
 
 import com.edu.eksamenbackend.dto.AlbumCustomerDTO;
+import com.edu.eksamenbackend.entity.AlbumCustomer;
+import com.edu.eksamenbackend.repository.AlbumCustomerRepository;
 import com.edu.eksamenbackend.service.AlbumCustomerService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/customers/{customerId}/albums")
@@ -19,26 +23,29 @@ public class AlbumCustomerController {
         this.albumCustomerService = albumCustomerService;
     }
 
-    // A. Register interest (reserve/like)
+    // A. Register interest
     @PostMapping("/{albumId}/reserve")
-    public ResponseEntity<Void> registerInterest(@PathVariable Long customerId, @PathVariable Long albumId) {
-        albumCustomerService.registerInterest(customerId, albumId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> registerInterest(@PathVariable Long customerId, @PathVariable Long albumId) {
+        String result = albumCustomerService.registerInterest(customerId, albumId);
+        return ResponseEntity.ok(Map.of("message", result));
     }
 
-    // B. Unsubscribe from an album (unreserve/unlike)
+    // B. Unsubscribe from an album
     @DeleteMapping("/{albumId}/unsubscribe")
-    public ResponseEntity<Void> unsubscribeFromAlbum(@PathVariable Long customerId, @PathVariable Long albumId) {
-        albumCustomerService.unsubscribeFromAlbum(customerId, albumId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> unsubscribeInterest(@PathVariable Long customerId, @PathVariable Long albumId) {
+        String result = albumCustomerService.unsubscribeInterest(customerId, albumId);
+        return ResponseEntity.ok(Map.of("message", result));
     }
 
-    // C. Get reservations (either all reservations or only available albums)
+    // C. Get reservations
     @GetMapping("/reservations")
-    public ResponseEntity<List<AlbumCustomerDTO>> getReservations(
-            @PathVariable Long customerId,
-            @RequestParam(value = "available", required = false, defaultValue = "false") boolean available) {
-        List<AlbumCustomerDTO> reservations = albumCustomerService.getReservations(customerId, available);
+    public ResponseEntity<?> getReservations(@PathVariable Long customerId,
+                                             @RequestParam(defaultValue = "false") boolean availableOnly) {
+        List<AlbumCustomer> reservations = albumCustomerService.getReservations(customerId, availableOnly);
+        if (reservations.isEmpty()) {
+            return ResponseEntity.ok(Map.of("message", "No reservations found."));
+        }
+
         return ResponseEntity.ok(reservations);
     }
 }

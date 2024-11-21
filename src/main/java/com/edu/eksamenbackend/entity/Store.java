@@ -1,5 +1,6 @@
 package com.edu.eksamenbackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +21,7 @@ public class Store {
     private String zip;
 
     @OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Album> albums;
 
     public Store() {

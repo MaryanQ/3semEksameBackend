@@ -6,15 +6,20 @@ import com.edu.eksamenbackend.dto.AlbumDTO;
 import com.edu.eksamenbackend.dto.StoreDTO;
 import com.edu.eksamenbackend.entity.Album;
 import com.edu.eksamenbackend.entity.AlbumCustomer;
+import com.edu.eksamenbackend.entity.Customer;
 import com.edu.eksamenbackend.entity.Store;
 import com.edu.eksamenbackend.repository.AlbumCustomerRepository;
 import com.edu.eksamenbackend.repository.AlbumRepository;
+import com.edu.eksamenbackend.repository.CustomerRepository;
 import com.edu.eksamenbackend.repository.StoreRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,69 +29,81 @@ public class StoreService {
     private final AlbumRepository albumRepository;
     private final AlbumMapper albumMapper;
     private final AlbumCustomerRepository albumCustomerRepository;
+    private final StoreMapper storeMapper;
+    private CustomerRepository customerRepository;
 
     @Autowired
-    public StoreService(StoreRepository storeRepository, AlbumRepository albumRepository, AlbumMapper albumMapper, AlbumCustomerRepository albumCustomerRepository) {
+    public StoreService(StoreRepository storeRepository, AlbumRepository albumRepository, AlbumMapper albumMapper, AlbumCustomerRepository albumCustomerRepository, StoreMapper storeMapper, CustomerRepository customerRepository) {
         this.storeRepository = storeRepository;
         this.albumRepository = albumRepository;
         this.albumMapper = albumMapper;
         this.albumCustomerRepository = albumCustomerRepository;
+        this.storeMapper = storeMapper;
+        this.customerRepository = customerRepository;
     }
 
-    // A. Assign an album to a store
-    public void assignAlbumToStore(Long albumId, Long storeId) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new RuntimeException("Store not found"));
-        Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new RuntimeException("Album not found"));
 
-        album.setStore(store);  // Set the store to the album
+    public List<StoreDTO> getAllStores() {
+        List<Store> stores = storeRepository.findAll();
+        return stores.stream()
+                .map(storeMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public String assignAlbumToStore(Long storeId, Long albumId) {
+        Optional<Store> storeOpt = storeRepository.findById(storeId);
+        Optional<Album> albumOpt = albumRepository.findById(albumId);
+
+        if (storeOpt.isEmpty()) {
+            return "Store with ID " + storeId + " does not exist.";
+        }
+        if (albumOpt.isEmpty()) {
+            return "Album with ID " + albumId + " does not exist.";
+        }
+
+        Album album = albumOpt.get();
+        Store store = storeOpt.get();
+
+        album.setStore(store);
         albumRepository.save(album);
+
+        return "Album '" + album.getTitle() + "' assigned to store '" + store.getName() + "' successfully!";
     }
 
-    // B. View store details, including linked albums
-    public StoreDTO getStoreDetails(Long storeId, String artist, Boolean available) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new RuntimeException("Store not found"));
 
-        List<Album> albums = albumRepository.findByStoreId(storeId);
-
-        // Filtering albums based on artist and availability
-        if (artist != null) {
-            albums = albums.stream()
-                    .filter(album -> album.getArtist().equalsIgnoreCase(artist))
-                    .collect(Collectors.toList());
+    public Map<String, Object> getStoreDetails(Long storeId, String artist, Boolean available) {
+        Optional<Store> storeOpt = storeRepository.findById(storeId);
+        if (storeOpt.isEmpty()) {
+            return Map.of("error", "Store with ID " + storeId + " does not exist.");
         }
 
-        if (available != null) {
-            albums = albums.stream()
-                    .filter(album -> album.isAvailable() == available)
-                    .collect(Collectors.toList());
+        Store store = storeOpt.get();
+        List<Album> filteredAlbums = store.getAlbums().stream()
+                .filter(album -> (artist == null || album.getArtist().equalsIgnoreCase(artist)) &&
+                        (available == null || album.isAvailable() == available))
+                .toList();
+
+        return Map.of(
+                "store", store,
+                "albums", filteredAlbums
+        );
+    }
+
+    public List<Album> getAvailableReservedAlbums(Long customerId) {
+        Optional<Customer> customerOpt = customerRepository.findById(customerId);
+        if (customerOpt.isEmpty()) {
+            return Collections.emptyList(); // Return an empty list if customer doesn't exist
         }
 
-        List<AlbumDTO> albumDTOs = albums.stream()
-                .map(albumMapper::toDTO)
-                .collect(Collectors.toList());
-
-        // Convert store to DTO and set linked albums
-        StoreDTO storeDTO = new StoreDTO();
-        storeDTO.setId(store.getId());
-        storeDTO.setName(store.getName());
-        storeDTO.setStreet(store.getStreet());
-        storeDTO.setCity(store.getCity());
-        storeDTO.setAlbums(albumDTOs);
-
-        return storeDTO;
+        Customer customer = customerOpt.get();
+        return albumCustomerRepository.findByCustomerIdAndReserved(customerId, true).stream()
+                .map(AlbumCustomer::getAlbum)
+                .filter(Album::isAvailable)
+                .toList();
     }
 
-    // C. Get a list of albums reserved by a customer and now available
-    public List<AlbumDTO> getAvailableReservedAlbums(Long customerId) {
-        // Fetch albums reserved by the customer
-        List<AlbumCustomer> reservedAlbums = albumCustomerRepository.findByCustomerIdAndReservedTrue(customerId);
-        // Filter by available albums
-        return reservedAlbums.stream()
-                .filter(albumCustomer -> albumCustomer.getAlbum().isAvailable())
-                .map(albumCustomer -> albumMapper.toDTO(albumCustomer.getAlbum()))
-                .collect(Collectors.toList());
-    }
+
+
+
 }

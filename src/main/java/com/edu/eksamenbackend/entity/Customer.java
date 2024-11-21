@@ -1,5 +1,6 @@
 package com.edu.eksamenbackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,12 @@ public class Customer {
     private String email;
     private String phoneNumber;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JsonIgnore
+    private User user;
+
+
     public Customer() {
     }
 
@@ -26,6 +33,16 @@ public class Customer {
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
+
     }
+
+    public Customer(String name, String email, String phoneNumber, User user) {
+        this.name = name;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.user = user;
+    }
+
+
 }
 
